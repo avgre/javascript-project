@@ -338,7 +338,7 @@ function createPlayer(name, level = 1, items = []) {
       player.attack = player.level * 10;
       player.speed = 3000 / player.level;
       player.hp = player.level * 100;
-      print('You have leveled up to level ' + player.level)
+      print('You have leveled up to level ' + player.level,';font-weight:bold;')
       player.exp = player.exp - (player.level - 1) * 20;
       return;
   }
