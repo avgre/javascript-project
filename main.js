@@ -149,7 +149,9 @@ function search(nameKey, myArray){
 function searchRarity(nameKey, myArray){
   for (let i=0; i < myArray.length; i++) {
       if (myArray[i].rarity <= nameKey) {
-        return(i);
+        player.items.push(myArray[i]);
+        print('Successfully stole items: ');
+        print(myArray[i]);
       }
     }
 }
@@ -311,11 +313,17 @@ function createPlayer(name, level = 1, items = []) {
       requiredLevel: 3,
       cooldown: 25000,
       isReadyToCast : true,
-      use: function(target){
+      use: function(){
         if (board[player.position.x][player.position.y].type === 'tradesman') {
           let tradesman = board[player.position.x][player.position.y];
-
+          searchRarity (1 , tradesman.items);
+          for (let i=0; i < tradesman.items.length; i++) {
+            if (tradesman.items[i].rarity <= 1){
+              tradesman.items.splice(i, 1);
+            }
           }
+          player.skills[1].isReadyToCast = false;
+        }
       }
     }];
   player.attack = level *10;
@@ -459,6 +467,8 @@ function buy(index) {
   }
   else {
     player.gold = player.gold - tradeGuy.items[index].value;
+    print('Purchased: ' + tradeGuy.items[index].name);
+    print('Gold: ' + player.gold);
     player.items.push(tradeGuy.items[index]);
     for( let i = 0; i < tradeGuy.items.length; i++){ 
       if ( i === index) {
