@@ -6,7 +6,7 @@ If you think you have a better / different way to do things, you are free to do 
 let quickboard = function () {
   createPlayer('Tim', 2, [items[0],items[0],items[1],items[0],items[0],items[0],items[2]]);
   next();
-  initBoard (30,36);
+  initBoard (25,36);
   monster1 = createMonster(1, items[0], { x : 10 , y : 10 });
   monster2 = createMonster(2, items[1], { x : 7 , y : 12 });
   monster3 = createMonster(2, items[1], { x : 8 , y : 12 });
@@ -15,10 +15,10 @@ let quickboard = function () {
   monster6 = createMonster(4, items[1], { x : 8 , y : 19 });
   updateBoard(createItem(items[0], { x : 20 , y : 27 }));
   updateBoard(createItem(items[0], { x : 3 , y: 2 }));
-  updateBoard(createItem(items[0], { x : 21 , y : 33 }));
+  updateBoard(createItem(items[0], { x : 21 , y : 31 }));
   updateBoard(createItem(items[1], { x : 17 , y : 5 }));
-  updateBoard(createItem(items[1], { x : 28 , y : 17 }));
-  updateBoard(createItem(items[2], { x : 28 , y : 28 }));
+  updateBoard(createItem(items[1], { x : 23 , y : 17 }));
+  updateBoard(createItem(items[2], { x : 11 , y : 14 }));
   updateBoard(monster1);
   updateBoard(monster2);
   updateBoard(monster3);
@@ -26,7 +26,7 @@ let quickboard = function () {
   updateBoard(monster5);
   updateBoard(monster6);
   updateBoard(createTradesman([items[0],items[1],items[0]], {x: 12, y: 12}));
-  updateBoard(createTradesman([items[0],items[1],items[2]], {x: 23, y: 23}));
+  updateBoard(createTradesman([items[0],items[1],items[2]], {x: 14, y: 23}));
   updateBoard(createDungeon({x: 16, y: 16}, false, false, items[1], 35));
   updateBoard(createDungeon({x: 14, y: 14}, true, true ));
   updateBoard(createDungeon({x: 15, y: 15}, true, false, items[0], 45));
@@ -139,8 +139,16 @@ function cloneArray(objs) {
 }
 
 function search(nameKey, myArray){
-  for (var i=0; i < myArray.length; i++) {
+  for (let i=0; i < myArray.length; i++) {
       if (myArray[i].type === nameKey) {
+        return(i);
+      }
+    }
+}
+
+function searchRarity(nameKey, myArray){
+  for (let i=0; i < myArray.length; i++) {
+      if (myArray[i].rarity <= nameKey) {
         return(i);
       }
     }
@@ -153,7 +161,7 @@ function search(nameKey, myArray){
 function useItem(itemName, target) {
   let index = search( itemName, player.items);
   player.items[index].use(target);
-  for( var i = 0; i < player.items.length; i++){ 
+  for( let i = 0; i < player.items.length; i++){ 
     if ( i === index) {
       player.items.splice(i, 1); 
     }
@@ -161,11 +169,30 @@ function useItem(itemName, target) {
   return;
 }
 
+
+
 // Uses a player skill (note: skill is not consumable, it's useable infinitely besides the cooldown wait time)
 // skillName is a string. target is an entity (typically monster).
 // If target is not specified, skill shoud be used on the entity at the same position
-function useSkill(skillName, target) {
-  
+function useSkill(skillName) {
+  let index = search( skillName, player.skills);
+  if (player.level >= player.skills[index].requiredLevel) {
+    if ( player.skills[index].isReadyToCast === true) {
+      let index = search( skillName, player.skills);
+      function setTrue() {
+        player.skills[index].isReadyToCast = true;
+      }
+      player.skills[index].use();
+      setTimeout (setTrue , player.skills[index].cooldown)
+      return;
+    }
+    else {
+      print ('Skill in cooldown.');
+    }
+  }
+  else {
+    print('Level not high enough to use skill!');
+  }
 }
 
 // Sets the board variable to a 2D array of rows and columns
@@ -249,6 +276,10 @@ function printBoard() {
   }
 }
 
+function reverseString(str) {
+  return str.split("").reverse().join("");
+}
+
 // Sets the player variable to a player object based on the specifications of the README file
 // The items property will need to be a new array of cloned item objects
 // Prints a message showing player name and level (which will be 1 by default)
@@ -256,7 +287,37 @@ function createPlayer(name, level = 1, items = []) {
   player.name = name;
   player.level = level;
   player.items = items;
-  player.skills = [];
+  player.skills = [
+    {
+      name: 'confuse',
+      type: 'confuse',
+      requiredLevel: 1,
+      cooldown: 10000,
+      isReadyToCast : true,
+      use: function(){
+      if (board[player.position.x][player.position.y].type === 'monster') {
+        let monster = board[player.position.x][player.position.y];
+        monster.hp = monster.hp - player.level * 25;
+        print('Confusing ' + monster.name + '....');
+        print('....' + reverseString(monster.name) + ', target is confused and hurts itself in the process', 'red');
+        print(reverseString(monster.name) + ' hit!! -25 HP');
+        player.skills[0].isReadyToCast = false;
+        }
+      }
+    },
+    {
+      name: 'steal',
+      type: 'steal',
+      requiredLevel: 3,
+      cooldown: 25000,
+      isReadyToCast : true,
+      use: function(target){
+        if (board[player.position.x][player.position.y].type === 'tradesman') {
+          let tradesman = board[player.position.x][player.position.y];
+
+          }
+      }
+    }];
   player.attack = level *10;
   player.speed = 3000 / level;
   player.hp = level * 100;
@@ -399,7 +460,7 @@ function buy(index) {
   else {
     player.gold = player.gold - tradeGuy.items[index].value;
     player.items.push(tradeGuy.items[index]);
-    for( var i = 0; i < tradeGuy.items.length; i++){ 
+    for( let i = 0; i < tradeGuy.items.length; i++){ 
       if ( i === index) {
         tradeGuy.items.splice(i, 1); 
         return;
@@ -414,7 +475,7 @@ function sell(index) {
   tradeGuy.items.push(player.items[index]);
   print('Sold ' + player.items[index].name);
   print('Gold: ' + player.gold)
-  for( var i = 0; i < player.items.length; i++){ 
+  for( let i = 0; i < player.items.length; i++){ 
     if ( i === index) {
       player.items.splice(i, 1); 
       return;
